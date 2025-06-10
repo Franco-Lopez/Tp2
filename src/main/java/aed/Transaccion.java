@@ -32,7 +32,14 @@ public class Transaccion implements Comparable<Transaccion> {
 
     @Override
     public boolean equals(Object otro){
-        throw new UnsupportedOperationException("Implementar!");
+       if (otro == null || this.getClass() != otro.getClass()) {
+            return false;
+        } else if (this == otro) {
+            return true;
+        }
+
+        Transaccion otro_t = (Transaccion) otro;
+        return this.id == otro_t.id && this.id_comprador == otro_t.id_comprador && this.id_vendedor == otro_t.id_vendedor && this.monto == otro_t.monto;  
     }
 
     public int monto() {
