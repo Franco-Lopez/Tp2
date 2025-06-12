@@ -38,11 +38,19 @@ public class Berretacoin {
     }
 
     public Transaccion txMayorValorUltimoBloque(){
-        throw new UnsupportedOperationException("Implementar!");
+        if(ultimo == null){
+            return null;
+        }
+        else{
+            return ultimo.transaccionMayorMonto();
+        }
     }
 
     public Transaccion[] txUltimoBloque(){
-        throw new UnsupportedOperationException("Implementar!");
+        if(ultimo == null){
+            return null;
+        }
+        return ultimo.obtenerTransacciones();
     }
 
     public int maximoTenedor(){
@@ -50,10 +58,16 @@ public class Berretacoin {
     }
 
     public int montoMedioUltimoBloque(){
-        throw new UnsupportedOperationException("Implementar!");
+        if(ultimo == null){
+            return 0;
+        }
+        return ultimo.montoPromedio();
     }
 
     public void hackearTx(){
-        throw new UnsupportedOperationException("Implementar!");
+        if(ultimo == null){
+            
+        }
+        
     }
 }
