@@ -1,59 +1,119 @@
 package aed;
 
+import java.util.ArrayList;
+
 public class Berretacoin {
+    private ListaEnlazada<Bloque> blockchain;
+    private MaxHeap<Usuario> usuarios;
+    private ArrayList<Usuario> listaUsuarios;
+    private ArrayList<MaxHeap<Usuario>.Handle> handlesUsuarios;
 
-    private Bloque ultimo;
-    private int cantidadUsuarios;
-    private int[] saldosUsuarios;
-    private int maxTenedorId;
-    private int maxSaldo;
+    public Berretacoin(int n_usuarios) { // se construye el heap de usuarios con maxHeapDesdeSecuencia, que es O(P).
+        blockchain = new ListaEnlazada<Bloque>();
+        listaUsuarios = new ArrayList<>(n_usuarios);
 
-    public Berretacoin(int n_usuarios){
-        this.cantidadUsuarios = n_usuarios;
-        this.saldosUsuarios = new int[n_usuarios];
-        this.ultimo = null;
-        this.maxTenedorId = 1;
-        this.maxSaldo = 0;
-    }
-
-    public void agregarBloque(Transaccion[] transacciones){
-        Bloque nuevoBloque = new Bloque(transacciones);
-
-        if (ultimo == null) {
-            ultimo = nuevoBloque;
-        }else{
-            ultimo.establecerSiguiente(nuevoBloque);
-            ultimo = nuevoBloque;
+        for (int i = 1; i <= n_usuarios; i++) {
+            listaUsuarios.add(new Usuario(i));
         }
 
-        for (Transaccion transaccion : transacciones) {
-            int comprador = transaccion.id_comprador() - 1;
-            int vendedor = transaccion.id_vendedor() - 1;
-            int monto = transaccion.monto();
+        usuarios = new MaxHeap<Usuario>();
+        usuarios.maxHeapDesdeSecuencia(listaUsuarios);
 
-            saldosUsuarios[comprador]-= monto;
-            saldosUsuarios[vendedor]+=monto;
+        handlesUsuarios = new ArrayList<>(listaUsuarios.size());
+        for (int i = 0; i < listaUsuarios.size(); i++) {
+            handlesUsuarios.add(null); // placeholder
+        }
+
+        for (int i = 0; i < usuarios.tamaño(); i++) {
+            MaxHeap<Usuario>.Handle h = usuarios.handleDe(i);
+            Usuario u = usuarios.verElemento(h);
+            handlesUsuarios.set(u.id() - 1, h);
         }
 
     }
 
-    public Transaccion txMayorValorUltimoBloque(){
-        throw new UnsupportedOperationException("Implementar!");
+    public void agregarBloque(Transaccion[] transacciones) { // recorro las transacciones en O(n_b), actualizo montos en
+                                                             // O(1) y actualizarPrioridad en O(log P) entonces:
+                                                             // O(n_b × log P).
+        Bloque nuevo = new Bloque(blockchain.longitud(), transacciones);
+        blockchain.agregarAtras(nuevo);
+
+        for (Transaccion tx : transacciones) {
+            if (tx.id_comprador() != 0) {
+                Usuario comprador = listaUsuarios.get(tx.id_comprador() - 1);
+                Usuario vendedor = listaUsuarios.get(tx.id_vendedor() - 1);
+
+                comprador.sumarAMonto(-tx.monto());
+                vendedor.sumarAMonto(tx.monto());
+
+                usuarios.actualizarPrioridad(handlesUsuarios.get(comprador.id() - 1));
+                usuarios.actualizarPrioridad(handlesUsuarios.get(vendedor.id() - 1));
+            } else {
+                Usuario vendedor = listaUsuarios.get(tx.id_vendedor() - 1);
+                vendedor.sumarAMonto(tx.monto());
+                usuarios.actualizarPrioridad(handlesUsuarios.get(vendedor.id() - 1));
+            }
+        }
+
     }
 
-    public Transaccion[] txUltimoBloque(){
-        throw new UnsupportedOperationException("Implementar!");
+    public Transaccion txMayorValorUltimoBloque() { // consultarMaximo() en MaxHeap es O(1)
+        return blockchain.obtenerUltimo().transaccionMaxima();
     }
 
-    public int maximoTenedor(){
-        throw new UnsupportedOperationException("Implementar!");
+    public Transaccion[] txUltimoBloque() { // recorro la lista enlazada de nodos activos una vez
+        Bloque ultimoBloque = blockchain.obtenerUltimo();
+        if (ultimoBloque == null) {
+            return new Transaccion[0];
+        } else {
+            return ultimoBloque.obtenerTransacciones(); // recorre todos los nodos activos pero los invactivos son nodos
+                                                        // null
+        } // se ajustan los puntero y ese nodo ya no esta enlazado, no va a aparecer en
+          // actual.sig
+          // luego recorrer la lista es O(n_b)
     }
 
-    public int montoMedioUltimoBloque(){
-        throw new UnsupportedOperationException("Implementar!");
+    public int maximoTenedor() { // accedo a consultarMaximo() del heap de usuarios.
+        return usuarios.consultarMaximo().id();
     }
 
-    public void hackearTx(){
-        throw new UnsupportedOperationException("Implementar!");
+    public int montoMedioUltimoBloque() { // llamado a devolver atributo privado de bloque
+        return blockchain.obtenerUltimo().montoMedio();
     }
+
+    public void hackearTx() {
+        Bloque ultimoBloque = blockchain.obtenerUltimo();
+        if (ultimoBloque == null)
+            return;
+
+        Transaccion tx = ultimoBloque.eliminarTransaccionMaxima();
+        if (tx == null)
+            return;
+
+        int monto = tx.monto();
+        int idComprador = tx.id_comprador();
+        int idVendedor = tx.id_vendedor();
+
+        if (idComprador != 0) {
+            Usuario comprador = listaUsuarios.get(idComprador - 1);
+            comprador.sumarAMonto(monto);
+            usuarios.actualizarPrioridad(handlesUsuarios.get(comprador.id() - 1));
+        }
+
+        Usuario vendedor = listaUsuarios.get(idVendedor - 1);
+        vendedor.sumarAMonto(-monto);
+        usuarios.actualizarPrioridad(handlesUsuarios.get(vendedor.id() - 1));
+
+        Transaccion[] txsActuales = ultimoBloque.obtenerTransacciones();
+        int suma = 0;
+        int cantidad = 0;
+        for (Transaccion t : txsActuales) {
+            if (t.id_comprador() != 0) {
+                suma += t.monto();
+                cantidad++;
+            }
+        }
+        ultimoBloque.setMontoMedio(cantidad == 0 ? 0 : suma / cantidad);
+    }
+
 }
