@@ -1,14 +1,17 @@
 package aed;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 
 public class Bloque {
     private int id;
     private MaxHeap<Transaccion> movimientos;
     private int montoMedio;
     private ListaEnlazada<Transaccion> transacciones;
-    private ArrayList<Handle> handleTx;
+  //  private ArrayList<Handle> handleTx;
+
+    private int cantidadActivas;
+    private int sumaMontos;
+    private int cantidadMontos;
 
     public class Handle {
         private ListaEnlazada<Transaccion>.Nodo nodo;
@@ -35,40 +38,52 @@ public class Bloque {
         movimientos = new MaxHeap<>();
         montoMedio = 0;
         transacciones = new ListaEnlazada<>();
-        handleTx = new ArrayList<>();
+      //  handleTx = new ArrayList<>(txsOrdenadasPorId.length);
 
-        ArrayList<Transaccion> txs = new ArrayList<>();
+        cantidadActivas = 0;
+        sumaMontos = 0;
+        cantidadMontos = 0;
+
+        ArrayList<Transaccion> txs = new ArrayList<>(txsOrdenadasPorId.length);
 
         for (Transaccion tx : txsOrdenadasPorId) {
             ListaEnlazada<Transaccion>.Nodo nodo = transacciones.agregarAtrasConNodo(tx);
             Handle h = new Handle(nodo);
             tx.setHandleLista(h);
-            handleTx.add(h);
+           // handleTx.add(h);
             txs.add(tx);
-        }
 
-        movimientos.maxHeapDesdeSecuencia(txs);
-        actualizarParametros(txsOrdenadasPorId);
-    }
-
-    public void agregar(Transaccion[] transacciones) {
-        ArrayList<Transaccion> _transacciones = new ArrayList<>(Arrays.asList(transacciones));
-        movimientos.maxHeapDesdeSecuencia(_transacciones);
-        actualizarParametros(transacciones);
-    }
-
-    private void actualizarParametros(Transaccion[] transacciones) {
-        int suma = 0;
-        int conteo = 0;
-
-        for (Transaccion tx : transacciones) {
-            if (tx.comprador().id() != 0) {
-                suma += tx.monto();
-                conteo++;
+            cantidadActivas++;
+            if (tx.id_comprador() != 0) {
+                sumaMontos += tx.monto();
+                cantidadMontos++;
             }
         }
 
-        montoMedio = (conteo == 0) ? 0 : suma / conteo;
+        movimientos.maxHeapDesdeSecuencia(txs);
+        actualizarMontoMedio();
+    }
+
+    public void agregar(Transaccion[] nuevasTxs) {
+        for (Transaccion tx : nuevasTxs) {
+            movimientos.encolar(tx);
+        }
+
+        for (Transaccion tx : nuevasTxs) {
+            ListaEnlazada<Transaccion>.Nodo nodo = transacciones.agregarAtrasConNodo(tx);
+            Handle h = new Handle(nodo);
+            tx.setHandleLista(h);
+        //    handleTx.add(h);
+
+            if (tx.id_comprador() != 0) {
+                sumaMontos += tx.monto();
+                cantidadMontos++;
+            }
+
+            cantidadActivas++;
+        }
+
+        actualizarMontoMedio();
     }
 
     public Transaccion transaccionMaxima() {
@@ -81,21 +96,37 @@ public class Bloque {
 
         Transaccion tx = movimientos.devolverMaximo();
 
+        if (tx.id_comprador() != 0) {
+            sumaMontos -= tx.monto();
+            cantidadMontos--;
+        }
+
         Handle h = tx.getHandleLista();
         if (h != null && h.activa()) {
             transacciones.eliminarNodo(h.nodo());
             h.invalidar();
+            cantidadActivas--;
         }
+
+        actualizarMontoMedio();
 
         return tx;
     }
 
-    public void setMontoMedio(int nuevoMontoMedio) {
-        this.montoMedio = nuevoMontoMedio;
+    private void actualizarMontoMedio() {
+        montoMedio = (cantidadMontos == 0) ? 0 : sumaMontos / cantidadMontos;
     }
 
     public int montoMedio() {
         return montoMedio;
+    }
+
+    public int id() {
+        return id;
+    }
+
+    public int cantidadActivas() {
+        return cantidadActivas;
     }
 
     public int tamañoBloque() {
@@ -107,14 +138,15 @@ public class Bloque {
     }
 
     public Transaccion[] obtenerTransacciones() {
-        ArrayList<Transaccion> activas = new ArrayList<>();
-
-        for (Handle h : handleTx) {
-            if (h.activa()) {
-                activas.add(h.nodo().valor);
+        ArrayList<Transaccion> activas = new ArrayList<>(cantidadActivas);
+        ListaEnlazada<Transaccion>.Nodo actual = transacciones.primero();
+        while (actual != null) {
+            Transaccion tx = actual.valor;
+            if (tx.getHandleLista() != null && tx.getHandleLista().activa()) {
+                activas.add(tx);
             }
+            actual = actual.sig;
         }
-
         return activas.toArray(new Transaccion[0]);
     }
 }

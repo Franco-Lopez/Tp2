@@ -3,28 +3,32 @@ package aed;
 import java.util.ArrayList;
 
 public class Berretacoin {
+    // lista enlazada de bloques
     private ListaEnlazada<Bloque> blockchain;
+    // un maxheap de usuarios
     private MaxHeap<Usuario> usuarios;
+    // lista de array de usuarios
     private ArrayList<Usuario> listaUsuarios;
+    //// lista guadar handles del maxheap
     private ArrayList<MaxHeap<Usuario>.Handle> handlesUsuarios;
 
     public Berretacoin(int n_usuarios) { // se construye el heap de usuarios con maxHeapDesdeSecuencia, que es O(P).
         blockchain = new ListaEnlazada<Bloque>();
-        listaUsuarios = new ArrayList<>(n_usuarios);
+        ArrayList<Usuario> listaUsuarioss = new ArrayList<>(n_usuarios);
 
         for (int i = 1; i <= n_usuarios; i++) {
-            listaUsuarios.add(new Usuario(i));
+            listaUsuarioss.add(new Usuario(i));
         }
 
         usuarios = new MaxHeap<Usuario>();
-        usuarios.maxHeapDesdeSecuencia(listaUsuarios);
+        usuarios.maxHeapDesdeSecuencia(listaUsuarioss);
 
-        handlesUsuarios = new ArrayList<>(listaUsuarios.size());
-        for (int i = 0; i < listaUsuarios.size(); i++) {
-            handlesUsuarios.add(null); // placeholder
+        handlesUsuarios = new ArrayList<>(n_usuarios);
+        for (int i = 0; i < n_usuarios; i++) {
+            handlesUsuarios.add(null);
         }
 
-        for (int i = 0; i < usuarios.tamaño(); i++) {
+        for (int i = 0; i < n_usuarios; i++) {
             MaxHeap<Usuario>.Handle h = usuarios.handleDe(i);
             Usuario u = usuarios.verElemento(h);
             handlesUsuarios.set(u.id() - 1, h);
@@ -40,8 +44,13 @@ public class Berretacoin {
 
         for (Transaccion tx : transacciones) {
             if (tx.id_comprador() != 0) {
-                Usuario comprador = listaUsuarios.get(tx.id_comprador() - 1);
-                Usuario vendedor = listaUsuarios.get(tx.id_vendedor() - 1);
+                Usuario comprador = tx.comprador();
+                System.out.println("mostrar comprado ID: "+comprador.id());
+                System.out.println("mostrar comprado ID: "+comprador.monto());
+                System.out.println("mostramos lo de listausuario"+listaUsuarios.get(tx.id_comprador() - 1));
+                //Usuario comprador = listaUsuarios.get(tx.id_comprador() - 1);
+                Usuario vendedor = tx.vendedor();
+                //Usuario vendedor = listaUsuarios.get(tx.id_vendedor() - 1);
 
                 comprador.sumarAMonto(-tx.monto());
                 vendedor.sumarAMonto(tx.monto());
@@ -49,8 +58,12 @@ public class Berretacoin {
                 usuarios.actualizarPrioridad(handlesUsuarios.get(comprador.id() - 1));
                 usuarios.actualizarPrioridad(handlesUsuarios.get(vendedor.id() - 1));
             } else {
-                Usuario vendedor = listaUsuarios.get(tx.id_vendedor() - 1);
+                Usuario vendedor = tx.vendedor();
+                System.out.println("mostrar vendedor ID: "+vendedor.id());
+                //Usuario vendedor = listaUsuarios.get(tx.id_vendedor() - 1);
                 vendedor.sumarAMonto(tx.monto());
+                System.out.println("mostrar vendedor monto: "+vendedor.monto());
+                System.out.println("mostrar puntero handle"+handlesUsuarios.get(vendedor.id() - 1));
                 usuarios.actualizarPrioridad(handlesUsuarios.get(vendedor.id() - 1));
             }
         }
@@ -92,28 +105,19 @@ public class Berretacoin {
 
         int monto = tx.monto();
         int idComprador = tx.id_comprador();
-        int idVendedor = tx.id_vendedor();
+        //int idVendedor = tx.id_vendedor();
 
         if (idComprador != 0) {
-            Usuario comprador = listaUsuarios.get(idComprador - 1);
+            Usuario comprador = tx.comprador();
+            //Usuario comprador = listaUsuarios.get(idComprador - 1);
             comprador.sumarAMonto(monto);
             usuarios.actualizarPrioridad(handlesUsuarios.get(comprador.id() - 1));
         }
 
-        Usuario vendedor = listaUsuarios.get(idVendedor - 1);
+        Usuario vendedor = tx.vendedor();
+        //Usuario vendedor = listaUsuarios.get(idVendedor - 1);
         vendedor.sumarAMonto(-monto);
         usuarios.actualizarPrioridad(handlesUsuarios.get(vendedor.id() - 1));
-
-        Transaccion[] txsActuales = ultimoBloque.obtenerTransacciones();
-        int suma = 0;
-        int cantidad = 0;
-        for (Transaccion t : txsActuales) {
-            if (t.id_comprador() != 0) {
-                suma += t.monto();
-                cantidad++;
-            }
-        }
-        ultimoBloque.setMontoMedio(cantidad == 0 ? 0 : suma / cantidad);
     }
 
 }

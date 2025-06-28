@@ -9,7 +9,6 @@ public class Transaccion implements Comparable<Transaccion> {
     private int monto;
 
 
-// En Transaccion.java
 private Bloque.Handle handleLista;
 
 public void setHandleLista(Bloque.Handle h) {

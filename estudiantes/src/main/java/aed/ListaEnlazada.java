@@ -3,6 +3,7 @@ package aed;
 public class ListaEnlazada<T> {
     private Nodo primero;
     private Nodo ultimo;
+    private int longitud;
 
     public class Nodo {
         T valor;
@@ -17,16 +18,11 @@ public class ListaEnlazada<T> {
     public ListaEnlazada() {
         primero = null;
         ultimo = null;
+        longitud=0;
     }
 
     public int longitud() {
-        int res = 0;
-        Nodo actual = primero;
-        while (actual != null) {
-            res++;
-            actual = actual.sig;
-        }
-        return res;
+        return longitud;
     }
 
     public void agregarAtras(T elem) {
@@ -39,6 +35,7 @@ public class ListaEnlazada<T> {
             ultimo.sig = nuevo;
             ultimo = nuevo;
         }
+        longitud++;
     }
 
     public Nodo agregarAtrasConNodo(T elem) {
@@ -51,6 +48,7 @@ public class ListaEnlazada<T> {
             ultimo.sig = nuevo;
             ultimo = nuevo;
         }
+        longitud++;
         return nuevo;
     }
 
@@ -70,6 +68,7 @@ public class ListaEnlazada<T> {
 
         nodo.ant = null;
         nodo.sig = null;
+        longitud--;
     }
 
     public T obtener(int i) {

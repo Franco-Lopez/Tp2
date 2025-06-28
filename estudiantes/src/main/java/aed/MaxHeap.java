@@ -46,7 +46,7 @@ public class MaxHeap<T extends Comparable<T>> {
             int der = (2 * i) + 2;
             int mayor = i;
 
-            // Comprueba si existen y si son mayores
+            // comprueba si existen y si son mayores
             if (izq < longitud && heap.get(izq).compareTo(heap.get(mayor)) > 0) {
                 mayor = izq;
             }
@@ -62,17 +62,17 @@ public class MaxHeap<T extends Comparable<T>> {
     }
 
     private void swap(int i, int j) {
-        // Intercambio elementos del heap
+        // intercambio elementos del heap
         T tempElem = heap.get(i);
         heap.set(i, heap.get(j));
         heap.set(j, tempElem);
 
-        // Intercambio handles
+        // intercambio handles
         Handle tempHandle = handles.get(i);
         handles.set(i, handles.get(j));
         handles.set(j, tempHandle);
 
-        // Actualizo punteros internos
+        // actualizo punteros internos
         handles.get(i).moverA(i);
         handles.get(j).moverA(j);
     }
@@ -123,12 +123,11 @@ public class MaxHeap<T extends Comparable<T>> {
 
     public void eliminarMaximo() {
         if (longitud == 0) {
-
+            return;
         }
+
         int indiceUltimo = tamaño() - 1;
-
         swap(0, indiceUltimo);
-
         longitud -= 1;
 
         if (longitud > 0) {
@@ -179,8 +178,8 @@ public class MaxHeap<T extends Comparable<T>> {
     }
 
     public void maxHeapDesdeSecuencia(ArrayList<T> elementos) {
-        heap.clear();
-        handles.clear();
+      //  heap.clear();
+        //handles.clear();
 
         longitud = elementos.size();
 
@@ -195,7 +194,7 @@ public class MaxHeap<T extends Comparable<T>> {
     }
 
     public ArrayList<T> obtenerElementos() {
-        return new ArrayList<>(heap); // Es una copia!! no el original
+        return new ArrayList<>(heap.subList(0, longitud));
     }
 
     public Handle handleDe(int i) {
